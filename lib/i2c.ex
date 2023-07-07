@@ -3,7 +3,8 @@ defmodule Circuits.I2C do
   `Circuits.I2C` lets you communicate with hardware devices using the I2C
   protocol.
   """
-  alias Circuits.I2C.Nif
+  @behaviour Circuits.I2C.I2cBehaviour
+  alias Circuits.I2C.{I2cBehaviour, Nif}
 
   # Public API
 
@@ -67,6 +68,7 @@ defmodule Circuits.I2C do
   On success, this returns a reference to the I2C bus.  Use the reference in
   subsequent calls to read and write I2C devices
   """
+  @impl I2cBehaviour
   @spec open(binary() | charlist()) :: {:ok, bus()} | {:error, term()}
   def open(bus_name) do
     Nif.open(to_string(bus_name))
@@ -79,6 +81,7 @@ defmodule Circuits.I2C do
 
   * `:retries` - number of retries before failing (defaults to no retries)
   """
+  @impl I2cBehaviour
   @spec read(bus(), address(), pos_integer(), [opt()]) :: {:ok, binary()} | {:error, term()}
   def read(i2c_bus, address, bytes_to_read, opts \\ []) do
     retries = Keyword.get(opts, :retries, 0)
@@ -89,6 +92,7 @@ defmodule Circuits.I2C do
   @doc """
   Initiate a read transaction and raise on error
   """
+  @impl I2cBehaviour
   @spec read!(bus(), address(), pos_integer(), [opt()]) :: binary()
   def read!(i2c_bus, address, bytes_to_read, opts \\ []) do
     unwrap_or_raise(read(i2c_bus, address, bytes_to_read, opts))
@@ -101,6 +105,7 @@ defmodule Circuits.I2C do
 
   * `:retries` - number of retries before failing (defaults to no retries)
   """
+  @impl I2cBehaviour
   @spec write(bus(), address(), iodata(), [opt()]) :: :ok | {:error, term()}
   def write(i2c_bus, address, data, opts \\ []) do
     retries = Keyword.get(opts, :retries, 0)
@@ -115,6 +120,7 @@ defmodule Circuits.I2C do
 
   * `:retries` - number of retries before failing (defaults to no retries)
   """
+  @impl I2cBehaviour
   @spec write!(bus(), address(), iodata(), [opt()]) :: :ok
   def write!(i2c_bus, address, data, opts \\ []) do
     unwrap_or_raise_ok(write(i2c_bus, address, data, opts))
@@ -135,6 +141,7 @@ defmodule Circuits.I2C do
 
   * `:retries` - number of retries before failing (defaults to no retries)
   """
+  @impl I2cBehaviour
   @spec write_read(bus(), address(), iodata(), pos_integer(), [opt()]) ::
           {:ok, binary()} | {:error, term()}
   def write_read(i2c_bus, address, write_data, bytes_to_read, opts \\ []) do
@@ -150,6 +157,7 @@ defmodule Circuits.I2C do
 
   * `:retries` - number of retries before failing (defaults to no retries)
   """
+  @impl I2cBehaviour
   @spec write_read!(bus(), address(), iodata(), pos_integer(), [opt()]) :: binary()
   def write_read!(i2c_bus, address, write_data, bytes_to_read, opts \\ []) do
     unwrap_or_raise(write_read(i2c_bus, address, write_data, bytes_to_read, opts))
@@ -158,6 +166,7 @@ defmodule Circuits.I2C do
   @doc """
   close the I2C bus
   """
+  @impl I2cBehaviour
   @spec close(bus()) :: :ok
   def close(i2c_bus) do
     Nif.close(i2c_bus)
@@ -174,6 +183,7 @@ defmodule Circuits.I2C do
   ["i2c-1"]
   ```
   """
+  @impl I2cBehaviour
   @spec bus_names() :: [binary()]
   def bus_names() do
     case Nif.info() do
@@ -208,6 +218,7 @@ defmodule Circuits.I2C do
   If you already have a reference to an open device, then you may pass its
   `reference` to `detect_devices/1` instead.
   """
+  @impl I2cBehaviour
   @spec detect_devices(bus() | binary()) :: [address()] | {:error, term()}
   def detect_devices(i2c_bus) when is_reference(i2c_bus) do
     Enum.filter(0x03..0x77, &device_present?(i2c_bus, &1))
@@ -231,6 +242,7 @@ defmodule Circuits.I2C do
   This is only intended to be called from the IEx prompt. Programs should
   use `detect_devices/1`.
   """
+  @impl I2cBehaviour
   @spec detect_devices() :: :"do not show this result in output"
   def detect_devices() do
     buses = bus_names()
@@ -259,6 +271,7 @@ defmodule Circuits.I2C do
 
   See also `discover_one/2`.
   """
+  @impl I2cBehaviour
   @spec discover([address()], present?()) :: [{binary(), address()}]
   def discover(possible_addresses, present? \\ &device_present?/2) do
     Enum.flat_map(bus_names(), &discover(&1, possible_addresses, present?))
@@ -292,6 +305,7 @@ defmodule Circuits.I2C do
   This function returns an `:ok` or `:error` tuple depending on whether one and
   only one device was found. See `discover_one!/2` for the raising version.
   """
+  @impl I2cBehaviour
   @spec discover_one([address()], present?()) ::
           {:ok, {binary(), address()}} | {:error, :not_found | :multiple_possible_matches}
   def discover_one(possible_addresses, present? \\ &device_present?/2) do
@@ -305,6 +319,7 @@ defmodule Circuits.I2C do
   @doc """
   Same as `discover_one/2` but raises on error
   """
+  @impl I2cBehaviour
   @spec discover_one!([address()], present?()) :: {binary(), address()}
   def discover_one!(possible_addresses, present? \\ &device_present?/2) do
     unwrap_or_raise(discover_one(possible_addresses, present?))
@@ -330,6 +345,7 @@ defmodule Circuits.I2C do
   that it does perform an I2C read on the specified address and this may cause
   some devices to actually do something.
   """
+  @impl I2cBehaviour
   @spec device_present?(bus(), address()) :: boolean()
   def device_present?(bus, address) do
     cond do
@@ -348,6 +364,7 @@ defmodule Circuits.I2C do
 
   This may be helpful when debugging I2C issues.
   """
+  @impl I2cBehaviour
   @spec info() :: map()
   defdelegate info(), to: Nif
 end
