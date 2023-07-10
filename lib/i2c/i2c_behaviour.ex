@@ -26,6 +26,8 @@ defmodule Circuits.I2C.I2cBehaviour do
 
   @callback write_read(bus(), address(), iodata(), pos_integer(), [opt()]) ::
               {:ok, binary()} | {:error, term()}
+  @callback write_read(bus(), address(), iodata(), pos_integer()) ::
+              {:ok, binary()} | {:error, term()}
 
   @callback write_read!(bus(), address(), iodata(), pos_integer(), [opt()]) :: binary()
   @callback close(bus()) :: :ok
